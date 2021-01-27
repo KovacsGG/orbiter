@@ -11,7 +11,7 @@
 
   AFRAME.registerComponent('orbit', {
     schema: {
-      color: {type: 'color', default: '#CC2222'},
+      color: {type: 'color', default: '#FFFFFF'},
       width: {type: 'number', default: 2}, // Ignored due to WebGL limitations
 
       ecc: {type: 'number', default: 0}, // eccentricity
@@ -109,6 +109,7 @@
     constructor() {
       this.selection = "moon";
       document.getElementById(this.selection).disabled = true;
+      document.getElementById(this.selection + "-orbit").setAttribute("orbit", "color: #CC2222");
 
       this.rotn = 0;
       this.incl = 0;
@@ -131,9 +132,11 @@
 
     changeSelection(e) {
       document.getElementById(this.selection).disabled = false;
+      document.getElementById(this.selection + "-orbit").setAttribute("orbit", "color: #FFFFFF");
       this.selection = e.target.id;
       var active = e.target;
       active.disabled = true;
+      document.getElementById(this.selection + "-orbit").setAttribute("orbit", "color: #CC2222");
 
       var data = document.getElementById(this.selection + "-orbit").components.orbit.data;
 
