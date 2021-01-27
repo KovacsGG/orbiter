@@ -109,7 +109,10 @@
     constructor() {
       this.selection = "moon";
       document.getElementById(this.selection).disabled = true;
-      document.getElementById(this.selection + "-orbit").setAttribute("orbit", "color: #CC2222");
+      var entity = document.getElementById(this.selection + "-orbit");
+      entity.setAttribute("orbit", "color: #CC2222");
+      document.getElementById("ecc").value = entity.components.orbit.data.ecc;
+      document.getElementById("a").value = entity.components.orbit.data.a;
 
       this.rotn = 0;
       this.incl = 0;
@@ -164,7 +167,7 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("load", () => { // DOMContetLoad precedes registering of A-FRAME components
     var c = new Controls();
   });
   </script>
@@ -172,10 +175,12 @@
 
 <body>
   <a-scene>
-    <a-entity id="planet-orbit" orbit>
-      <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.3" material="color:blue" orbiter>
-        <a-entity id="moon-orbit" orbit>
-          <a-entity id="moon-body" geometry="primitive: sphere; radius: 0.1" material="color:grey" orbiter></a-entity>
+    <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow">
+      <a-entity id="planet-orbit" orbit="ecc: 0.5; a: 2.85">
+        <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.2" material="color:blue" orbiter>
+          <a-entity id="moon-orbit" orbit="ecc: 0.75; rotn: -120; incl: 30">
+            <a-entity id="moon-body" geometry="primitive: sphere; radius: 0.05" material="color:grey" orbiter></a-entity>
+          </a-entity>
         </a-entity>
       </a-entity>
     </a-entity>
