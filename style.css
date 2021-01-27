@@ -1,0 +1,27 @@
+#controls {
+  position: absolute;
+  z-index: 1;
+  right: 0px;
+  top: 0px;
+
+  display:flex;
+  flex-direction: column;
+
+  background-color: #FFFFFF80;
+  padding: 0.5em;
+}
+
+#selector {
+  display: flex;
+  flex-direction: column;
+}
+
+#settings {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  column-gap: 0.5em;
+}
+
+#settings label {
+  text-align: right;
+}

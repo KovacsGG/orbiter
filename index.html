@@ -1,0 +1,204 @@
+<html>
+<head>
+  <link href="style.css" rel="stylesheet">
+  <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
+  <script type="text/javascript">
+  AFRAME.registerComponent('rotates', {
+    tick: function(time, timeDelta) {
+      this.el.object3D.rotation.y += THREE.Math.degToRad(0.1) * timeDelta;
+    }
+  });
+
+  AFRAME.registerComponent('orbit', {
+    schema: {
+      color: {type: 'color', default: '#CC2222'},
+      width: {type: 'number', default: 2}, // Ignored due to WebGL limitations
+
+      ecc: {type: 'number', default: 0}, // eccentricity
+      a: {type: 'number', default: 1}, // semi-major axis
+      rotn: {type: 'number', default: 0},
+      incl: {type: 'number', default: 0},
+      tilt: {type: 'number', default: 0},
+    },
+
+    init: function() {
+      this.curve = null;
+      this.periapses = null;
+    },
+      update: function(oldData) {
+        var data = this.data;
+        var redraw = false;
+
+        if (data.color != oldData.color || data.width != oldData.width) {
+          this.material = new THREE.LineBasicMaterial({
+            color: data.color,
+            linewidth: data.width,
+          });
+          redraw = true;
+        }
+
+        if (data.ecc != oldData.ecc || data.a != oldData.a) {
+          var linecc = data.ecc * data.a; //linear eccentricity
+          var b = Math.sqrt(data.a**2 - linecc**2);
+          this.curve = new THREE.EllipseCurve(linecc, 0, data.a, b);
+          var curvePoints = this.curve.getPoints(64); // TODO: Approximate circumference and calculate more points if needed
+          this.periapses = this.curve.getPointAt(0);
+          redraw = true;
+        }
+        if (redraw) {
+          this.geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
+          var orbit = new THREE.Line(this.geometry, this.material);
+          this.el.setObject3D("orbit", orbit);
+          //this.el.getObject3D("orbit").position.set(data.ecc, 0, 0);
+        }
+
+        if (data.rotn != 0) {
+          this.el.object3D.rotateOnAxis(new THREE.Vector3(0, 0, 1), THREE.Math.degToRad(data.rotn));
+          data.rotn = 0;
+        }
+        if (data.incl != 0) {
+          this.el.object3D.rotateOnAxis(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(data.incl));
+          data.incl = 0;
+        }
+        if (data.tilt != 0) {
+          this.el.object3D.rotateOnAxis(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(data.tilt));
+          data.tilt = 0;
+        }
+      },
+  });
+
+  AFRAME.registerComponent('orbiter', {
+    schema: {
+      speed: {type: 'number', default: 0.0001}, // Percent progress per milisecond
+      progress: {type: 'number', default: 0},
+    },
+
+    init: function() {
+      var data = this.data;
+    },
+    tick: function(time, timeDelta) {
+      var data = this.data;
+      data.progress += data.speed * timeDelta;
+      data.progress = data.progress % 1;
+      var pos = this.el.parentNode.components.orbit.curve.getPointAt(data.progress);
+      this.el.object3D.position.set(pos.x, pos.y, 0);
+    }
+  });
+
+  AFRAME.registerComponent('curve', {
+    schema: {
+      xRadius: {
+        type: 'number',
+        default: 1,
+      },
+      yRadius: {
+        type: 'number',
+        default: 1,
+      }
+    },
+
+    init: function () {
+      var data = this.data;
+      this.curve = new THREE.EllipseCurve(0, 0, data.xRadius, data.yRadius);
+      this.curvePoints = this.curve.getPoints(64);
+    }
+  });
+
+  class Controls {
+    constructor() {
+      this.selection = "moon";
+      document.getElementById(this.selection).disabled = true;
+
+      this.rotn = 0;
+      this.incl = 0;
+      this.tilt = 0;
+
+      document.getElementById("planet").addEventListener("click", this.changeSelection.bind(this));
+      document.getElementById("moon").addEventListener("click", this.changeSelection.bind(this));
+
+      document.getElementById("rotn").addEventListener("input", this.changeRotation.bind(this));
+      document.getElementById("incl").addEventListener("input", this.changeRotation.bind(this));
+      document.getElementById("tilt").addEventListener("input", this.changeRotation.bind(this));
+      document.getElementById("rotn").addEventListener("mouseup", this.resetSetting.bind(this));
+      document.getElementById("incl").addEventListener("mouseup", this.resetSetting.bind(this));
+      document.getElementById("tilt").addEventListener("mouseup", this.resetSetting.bind(this));
+
+      document.getElementById("ecc").addEventListener("input", this.changeShape.bind(this));
+      document.getElementById("a").addEventListener("input", this.changeShape.bind(this));
+
+    }
+
+    changeSelection(e) {
+      document.getElementById(this.selection).disabled = false;
+      this.selection = e.target.id;
+      var active = e.target;
+      active.disabled = true;
+
+      var data = document.getElementById(this.selection + "-orbit").components.orbit.data;
+
+      document.getElementById("ecc").value = data.ecc;
+      document.getElementById("a").value = data.a;
+    }
+
+    changeRotation(e) {
+      var axis = e.target.id;
+      var delta = e.target.value - this[axis];
+      document.getElementById(this.selection + "-orbit").setAttribute("orbit", axis + ": " + delta.toString());
+      this[axis] += delta;
+    }
+
+    resetSetting(e) {
+      var axis = e.target.id;
+      this[axis] = 0;
+      e.target.value = 0;
+    }
+
+    changeShape(e) {
+      var param = e.target.id;
+      var value = e.target.value;
+      document.getElementById(this.selection + "-orbit").setAttribute("orbit", param + ": " + e.target.value.toString());
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    var c = new Controls();
+  });
+  </script>
+</head>
+
+<body>
+  <a-scene>
+    <a-entity id="planet-orbit" orbit>
+      <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.3" material="color:blue" orbiter>
+        <a-entity id="moon-orbit" orbit>
+          <a-entity id="moon-body" geometry="primitive: sphere; radius: 0.1" material="color:grey" orbiter></a-entity>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+    <a-sky color="#0B0B0B"></a-sky>
+  </a-scene>
+
+  <div id="controls">
+    <div id="settings">
+      <label for="rotn">Rotation</label>
+      <input type="range" id="rotn" min="-180" max="180">
+
+      <label for="incl">Inclination</label>
+      <input type="range" id="incl" min="-180" max="180">
+
+      <label for="tilt">Tilt</label>
+      <input type="range" id="tilt" min="-180" max="180">
+
+      <label for="ecc">Eccentricity</label>
+      <input type="range" id="ecc" min="0" max="0.99" step="any" value="0">
+
+      <label for="a">Semi-major axis</label>
+      <input type="range" id="a" min="0" max="10" step="any" value="1">
+    </div>
+    <div id="selector">
+      <button id="planet" type="button">Planet</button>
+      <button id="moon" type="button">Satellite</button>
+    </div>
+  </div>
+</body>
+</html>
