@@ -19,6 +19,58 @@
     }
   });
 
+  AFRAME.registerSystem('orbiter', {
+    schema: {
+      projection: {type: 'number', default: 100},
+      speed: {type: 'number', default: 1},
+    },
+
+    init: function() {
+      this.entities = [];
+    },
+
+    tick: function(time, timeDelta) {
+      for (i in this.entities) {
+        var e = this.entities[i];
+        //var distanceScaling = 1.495978707e7; // 1/10 AU, [Km]
+        var distanceScaling = 1; // 1/10 AU, [Km]
+        var timeScaling = 0.0365; //
+        var a = e.parentNode.components.orbit.data.a * distanceScaling; // [Km]
+        var eps = e.parentNode.components.orbit.data.ecc;
+        var mass = e.components.mass.data.mass + this.getOrbitedMass(e); // [megaton]
+        var period = Math.sqrt((4*(Math.PI**2)*(a**3))/(mass*0.49823159621)); // [G] = Km^3/(MT*day^2) [day]
+        // https://en.wikipedia.org/wiki/Kepler's_laws_of_planetary_motion#Position_as_a_function_of_time
+        var meanMotion = 2 * Math.PI / period; // [deg/day]
+        var meanAnomaly = meanMotion * ((time * timeScaling) % period) // Period is in day, time is in milisec
+        var eccentricAnomaly = this.approxEccAnomaly(meanAnomaly, eps);
+        //var trueAnomaly = this.approxTrueAnomaly(eccentricAnomaly, eps);
+        //var trueAnomaly = Math.PI;
+        var progress = eccentricAnomaly / (2 * Math.PI);
+
+        var pos = e.parentNode.components.orbit.curve.getPointAt(progress);
+        e.object3D.position.set(pos.x, pos.y, 0);
+      }
+    },
+
+    register: function(e) {
+      this.entities.push(e);
+    },
+
+    getOrbitedMass: function(e) {
+      return e.parentNode.parentNode.components.mass.data.mass;
+    },
+
+    approxEccAnomaly: function(M, eps) {
+      var E = M;
+      var error = M - (E - eps * Math.sin(E));
+      while (Math.abs(error) > 0.001) {
+        E += error;
+        error = M - (E - eps * Math.sin(E));
+      }
+      return E;
+    },
+  });
+
   AFRAME.registerComponent('orbit', {
     schema: {
       color: {type: 'color', default: '#FFFFFF'},
@@ -86,15 +138,9 @@
     },
 
     init: function() {
-      var data = this.data;
+      this.system.register(this.el);
     },
-    tick: function(time, timeDelta) {
-      var data = this.data;
-      data.progress += data.speed * timeDelta;
-      data.progress = data.progress % 1;
-      var pos = this.el.parentNode.components.orbit.curve.getPointAt(data.progress);
-      this.el.object3D.position.set(pos.x, pos.y, 0);
-    }
+  });
 
   AFRAME.registerComponent('mass', {
     schema: {
