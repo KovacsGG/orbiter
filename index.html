@@ -22,7 +22,7 @@
   AFRAME.registerSystem('orbiter', {
     schema: {
       projection: {type: 'number', default: 100},
-      speed: {type: 'number', default: 1},
+      speed: {type: 'number', default: 2700000},
     },
 
     init: function() {
@@ -191,7 +191,7 @@
       document.getElementById("ecc").value = data.ecc;
       document.getElementById("ecc-val").innerHTML = Math.round(data.ecc * 1000) / 1000;
       document.getElementById("a").value = scaleOrbitalDistance(data.a);
-      document.getElementById("a-val").innerHTML = Math.round(data.a);
+      document.getElementById("a-val").innerHTML = data.a.toExponential(2);
 
       this.rotn = 0;
       this.incl = 0;
@@ -225,7 +225,7 @@
       document.getElementById("ecc").value = data.ecc;
       document.getElementById("ecc-val").innerHTML = Math.round(data.ecc * 1000) / 1000;
       document.getElementById("a").value = data.a;
-      document.getElementById("a-val").innerHTML = Math.round(data.ecc);
+      document.getElementById("a-val").innerHTML = data.a.toExponential(2);
 
     }
 
@@ -254,7 +254,7 @@
           break;
         case 'a':
           document.getElementById(this.selection + "-orbit").setAttribute("orbit", "a: " + descaleOrbitalDistance(value).toString());
-          document.getElementById("a-val").innerHTML = Math.round(descaleOrbitalDistance(value));
+          document.getElementById("a-val").innerHTML = descaleOrbitalDistance(value).toExponential(2);
       }
     }
   }
@@ -266,7 +266,7 @@
 </head>
 
 <body>
-  <a-scene>
+  <a-scene fog="type: exponential; density: 0.05; color: #000000">
     <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow" mass="mass: 1.989e21; density: 1.41e-3" position="0 0 -20">
       <a-entity id="planet-orbit" orbit="ecc: 0.5; a: 147.34e6">
         <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.2" material="color:blue" mass="mass: 5.9722e15; density: 5.51e-3" orbiter>
