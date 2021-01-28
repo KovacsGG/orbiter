@@ -187,8 +187,11 @@
       document.getElementById(this.selection).disabled = true;
       var entity = document.getElementById(this.selection + "-orbit");
       entity.setAttribute("orbit", "color: #CC2222");
-      document.getElementById("ecc").value = entity.components.orbit.data.ecc;
-      document.getElementById("a").value = entity.components.orbit.data.a;
+      var data = entity.components.orbit.data;
+      document.getElementById("ecc").value = data.ecc;
+      document.getElementById("ecc-val").innerHTML = data.ecc;
+      document.getElementById("a").value = data.a;
+      document.getElementById("a-val").innerHTML = data.a;
 
       this.rotn = 0;
       this.incl = 0;
@@ -220,7 +223,10 @@
       var data = document.getElementById(this.selection + "-orbit").components.orbit.data;
 
       document.getElementById("ecc").value = data.ecc;
+      document.getElementById("ecc-val").innerHTML = data.ecc;
       document.getElementById("a").value = data.a;
+      document.getElementById("a-val").innerHTML = data.ecc;
+
     }
 
     changeRotation(e) {
@@ -228,18 +234,28 @@
       var delta = e.target.value - this[axis];
       document.getElementById(this.selection + "-orbit").setAttribute("orbit", axis + ": " + delta.toString());
       this[axis] += delta;
+      document.getElementById(axis + "-val").innerHTML = this[axis];
     }
 
     resetSetting(e) {
       var axis = e.target.id;
       this[axis] = 0;
       e.target.value = 0;
+      document.getElementById(axis + "-val").innerHTML = 0;
     }
 
     changeShape(e) {
       var param = e.target.id;
       var value = e.target.value;
-      document.getElementById(this.selection + "-orbit").setAttribute("orbit", param + ": " + e.target.value.toString());
+      switch (param) {
+        case 'ecc':
+          document.getElementById(this.selection + "-orbit").setAttribute("orbit", "ecc: " + value.toString());
+          document.getElementById("ecc-val").innerHTML = value;
+          break;
+        case 'a':
+          document.getElementById(this.selection + "-orbit").setAttribute("orbit", "a: " + descaleOrbitalDistance(value).toString());
+          document.getElementById("a-val").innerHTML = descaleOrbitalDistance(value);
+      }
     }
   }
 
@@ -264,21 +280,26 @@
   </a-scene>
 
   <div id="controls">
-    <div id="settings">
+    <div class="settings">
       <label for="rotn">Rotation</label>
       <input type="range" id="rotn" min="-180" max="180">
+      <p id="rotn-val">0</p>
 
       <label for="incl">Inclination</label>
       <input type="range" id="incl" min="-180" max="180">
+      <p id="incl-val">0</p>
 
       <label for="tilt">Tilt</label>
       <input type="range" id="tilt" min="-180" max="180">
+      <p id="tilt-val">0</p>
 
       <label for="ecc">Eccentricity</label>
       <input type="range" id="ecc" min="0" max="0.99" step="any" value="0">
+      <p id="ecc-val"></p>
 
       <label for="a">Semi-major axis</label>
       <input type="range" id="a" min="0.01" max="10" step="any" value="1">
+      <p id="a-val"></p>
     </div>
     <div id="selector">
       <button id="planet" type="button">Planet</button>

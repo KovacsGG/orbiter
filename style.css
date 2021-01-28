@@ -3,6 +3,7 @@
   z-index: 1;
   right: 0px;
   top: 0px;
+  width: 33%;
 
   display:flex;
   flex-direction: column;
@@ -16,12 +17,18 @@
   flex-direction: column;
 }
 
-#settings {
+.settings {
   display: grid;
-  grid-template-columns: max-content max-content;
+  grid-template-columns: max-content max-content max-content;
   column-gap: 0.5em;
 }
 
-#settings label {
+.settings label {
   text-align: right;
+}
+
+.settings p {
+  margin: 0;
+  padding: 0;
+  text-align: left;
 }
