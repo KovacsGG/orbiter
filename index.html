@@ -3,6 +3,16 @@
   <link href="style.css" rel="stylesheet">
   <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script>
   <script type="text/javascript">
+  function scaleOrbitalDistance(a) {
+    return Math.log(a) / Math.log(10);
+  }
+
+  function descaleOrbitalDistance(a) {
+    return Math.pow(10, a);
+  }
+
+
+
   AFRAME.registerComponent('rotates', {
     tick: function(time, timeDelta) {
       this.el.object3D.rotation.y += THREE.Math.degToRad(0.1) * timeDelta;
@@ -15,7 +25,7 @@
       width: {type: 'number', default: 2}, // Ignored due to WebGL limitations
 
       ecc: {type: 'number', default: 0}, // eccentricity
-      a: {type: 'number', default: 1}, // semi-major axis
+      a: {type: 'number', default: 1e5}, // semi-major axis
       rotn: {type: 'number', default: 0},
       incl: {type: 'number', default: 0},
       tilt: {type: 'number', default: 0},
@@ -39,9 +49,10 @@
         }
 
         if (data.ecc != oldData.ecc || data.a != oldData.a) {
-          var linecc = data.ecc * data.a; //linear eccentricity
-          var b = Math.sqrt(data.a**2 - linecc**2);
-          this.curve = new THREE.EllipseCurve(linecc, 0, data.a, b);
+          var a = scaleOrbitalDistance(data.a);
+          var linecc = data.ecc * a; //linear eccentricity
+          var b = Math.sqrt(a**2 - linecc**2);
+          this.curve = new THREE.EllipseCurve(-linecc, 0, a, b);
           this.curvePoints = this.curve.getPoints(64); // TODO: Approximate circumference and calculate more points if needed
           this.periapses = this.curve.getPointAt(0);
           redraw = true;
@@ -84,6 +95,25 @@
       var pos = this.el.parentNode.components.orbit.curve.getPointAt(data.progress);
       this.el.object3D.position.set(pos.x, pos.y, 0);
     }
+
+  AFRAME.registerComponent('mass', {
+    schema: {
+      mass: {type: 'number', default: 1}, // MT
+      density: {type: 'number', default: 1}, // MT/kg^3
+    },
+    //init: function() {},
+
+    update: function() {
+      if (this.el.components.geometry) {
+        var volume = this.data.mass / this.data.density;
+        this.el.setAttribute('geometry', 'radius:' + (this.scaling(volume)).toString());
+      }
+    },
+
+    scaling: function(a) {
+      var r = Math.pow(Math.pow(a, 1/3), 1/3) / 1e2;
+      return r;
+    },
   });
 
   AFRAME.registerComponent('curve', {
@@ -175,11 +205,11 @@
 
 <body>
   <a-scene>
-    <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow">
-      <a-entity id="planet-orbit" orbit="ecc: 0.5; a: 2.85">
-        <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.2" material="color:blue" orbiter>
+    <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow" mass="mass: 1.989e21; density: 1.41e-3">
+      <a-entity id="planet-orbit" orbit="ecc: 0.5; a: 147.34e6">
+        <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.2" material="color:blue" mass="mass: 5.9722e15; density: 5.51e-3" orbiter>
           <a-entity id="moon-orbit" orbit="ecc: 0.75; rotn: -120; incl: 30">
-            <a-entity id="moon-body" geometry="primitive: sphere; radius: 0.05" material="color:grey" orbiter></a-entity>
+            <a-entity id="moon-body" geometry="primitive: sphere; radius: 0.05" material="color:grey" mass="mass: 7.34767309e13; density: 3.34e-3" orbiter></a-entity>
           </a-entity>
         </a-entity>
       </a-entity>
