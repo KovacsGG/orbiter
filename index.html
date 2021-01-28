@@ -190,7 +190,7 @@
       var data = entity.components.orbit.data;
       document.getElementById("ecc").value = data.ecc;
       document.getElementById("ecc-val").innerHTML = data.ecc;
-      document.getElementById("a").value = data.a;
+      document.getElementById("a").value = scaleOrbitalDistance(data.a);
       document.getElementById("a-val").innerHTML = data.a;
 
       this.rotn = 0;
