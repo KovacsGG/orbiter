@@ -189,9 +189,9 @@
       entity.setAttribute("orbit", "color: #CC2222");
       var data = entity.components.orbit.data;
       document.getElementById("ecc").value = data.ecc;
-      document.getElementById("ecc-val").innerHTML = data.ecc;
+      document.getElementById("ecc-val").innerHTML = Math.round(data.ecc * 1000) / 1000;
       document.getElementById("a").value = scaleOrbitalDistance(data.a);
-      document.getElementById("a-val").innerHTML = data.a;
+      document.getElementById("a-val").innerHTML = Math.round(data.a);
 
       this.rotn = 0;
       this.incl = 0;
@@ -223,9 +223,9 @@
       var data = document.getElementById(this.selection + "-orbit").components.orbit.data;
 
       document.getElementById("ecc").value = data.ecc;
-      document.getElementById("ecc-val").innerHTML = data.ecc;
+      document.getElementById("ecc-val").innerHTML = Math.round(data.ecc * 1000) / 1000;
       document.getElementById("a").value = data.a;
-      document.getElementById("a-val").innerHTML = data.ecc;
+      document.getElementById("a-val").innerHTML = Math.round(data.ecc);
 
     }
 
@@ -234,7 +234,7 @@
       var delta = e.target.value - this[axis];
       document.getElementById(this.selection + "-orbit").setAttribute("orbit", axis + ": " + delta.toString());
       this[axis] += delta;
-      document.getElementById(axis + "-val").innerHTML = this[axis];
+      document.getElementById(axis + "-val").innerHTML = Math.round(this[axis]);
     }
 
     resetSetting(e) {
@@ -250,11 +250,11 @@
       switch (param) {
         case 'ecc':
           document.getElementById(this.selection + "-orbit").setAttribute("orbit", "ecc: " + value.toString());
-          document.getElementById("ecc-val").innerHTML = value;
+          document.getElementById("ecc-val").innerHTML = Math.round(value * 1000) / 1000;
           break;
         case 'a':
           document.getElementById(this.selection + "-orbit").setAttribute("orbit", "a: " + descaleOrbitalDistance(value).toString());
-          document.getElementById("a-val").innerHTML = descaleOrbitalDistance(value);
+          document.getElementById("a-val").innerHTML = Math.round(descaleOrbitalDistance(value));
       }
     }
   }
