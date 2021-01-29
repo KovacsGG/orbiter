@@ -31,23 +31,23 @@
 
     tick: function(time, timeDelta) {
       for (i in this.entities) {
-        var e = this.entities[i];
+        const e = this.entities[i];
         //var distanceScaling = 1.495978707e7; // 1/10 AU, [Km]
-        var distanceScaling = 1; // 1/10 AU, [Km]
-        var timeScaling = 0.0365; //
-        var a = e.parentNode.components.orbit.data.a * distanceScaling; // [Km]
-        var eps = e.parentNode.components.orbit.data.ecc;
-        var mass = e.components.mass.data.mass + this.getOrbitedMass(e); // [megaton]
-        var period = Math.sqrt((4*(Math.PI**2)*(a**3))/(mass*0.49823159621)); // [G] = Km^3/(MT*day^2) [day]
+        const distanceScaling = 1; // 1/10 AU, [Km]
+        const timeScaling = 0.0365; //
+        const a = e.parentNode.components.orbit.data.a * distanceScaling; // [Km]
+        const eps = e.parentNode.components.orbit.data.ecc;
+        const mass = e.components.mass.data.mass + this.getOrbitedMass(e); // [megaton]
+        const period = Math.sqrt((4*(Math.PI**2)*(a**3))/(mass*0.49823159621)); // [G] = Km^3/(MT*day^2) [day]
         // https://en.wikipedia.org/wiki/Kepler's_laws_of_planetary_motion#Position_as_a_function_of_time
-        var meanMotion = 2 * Math.PI / period; // [deg/day]
-        var meanAnomaly = meanMotion * ((time * timeScaling) % period) // Period is in day, time is in milisec
-        var eccentricAnomaly = this.approxEccAnomaly(meanAnomaly, eps);
+        const meanMotion = 2 * Math.PI / period; // [deg/day]
+        const meanAnomaly = meanMotion * ((time * timeScaling) % period) // Period is in day, time is in milisec
+        const eccentricAnomaly = this.approxEccAnomaly(meanAnomaly, eps);
         //var trueAnomaly = this.approxTrueAnomaly(eccentricAnomaly, eps);
         //var trueAnomaly = Math.PI;
-        var progress = eccentricAnomaly / (2 * Math.PI);
+        const progress = eccentricAnomaly / (2 * Math.PI);
 
-        var pos = e.parentNode.components.orbit.curve.getPointAt(progress);
+        const pos = e.parentNode.components.orbit.curve.getPointAt(progress);
         e.object3D.position.set(pos.x, pos.y, 0);
       }
     },
@@ -61,8 +61,8 @@
     },
 
     approxEccAnomaly: function(M, eps) {
-      var E = M;
-      var error = M - (E - eps * Math.sin(E));
+      let E = M;
+      let error = M - (E - eps * Math.sin(E));
       while (Math.abs(error) > 0.001) {
         E += error;
         error = M - (E - eps * Math.sin(E));
@@ -89,8 +89,8 @@
       this.periapses = null;
     },
       update: function(oldData) {
-        var data = this.data;
-        var redraw = false;
+        const data = this.data;
+        let redraw = false;
 
         if (data.color != oldData.color || data.width != oldData.width) {
           this.material = new THREE.LineBasicMaterial({
@@ -101,9 +101,9 @@
         }
 
         if (data.ecc != oldData.ecc || data.a != oldData.a) {
-          var a = scaleOrbitalDistance(data.a);
-          var linecc = data.ecc * a; //linear eccentricity
-          var b = Math.sqrt(a**2 - linecc**2);
+          const a = scaleOrbitalDistance(data.a);
+          const linecc = data.ecc * a; //linear eccentricity
+          const b = Math.sqrt(a**2 - linecc**2);
           this.curve = new THREE.EllipseCurve(-linecc, 0, a, b);
           this.curvePoints = this.curve.getPoints(64); // TODO: Approximate circumference and calculate more points if needed
           this.periapses = this.curve.getPointAt(0);
@@ -111,7 +111,7 @@
         }
         if (redraw) {
           this.geometry = new THREE.BufferGeometry().setFromPoints(this.curvePoints);
-          var orbit = new THREE.Line(this.geometry, this.material);
+          const orbit = new THREE.Line(this.geometry, this.material);
           this.el.setObject3D("orbit", orbit);
           //this.el.getObject3D("orbit").position.set(data.ecc, 0, 0);
         }
@@ -147,17 +147,16 @@
       mass: {type: 'number', default: 1}, // MT
       density: {type: 'number', default: 1}, // MT/kg^3
     },
-    //init: function() {},
 
     update: function() {
       if (this.el.components.geometry) {
-        var volume = this.data.mass / this.data.density;
+        const volume = this.data.mass / this.data.density;
         this.el.setAttribute('geometry', 'radius:' + (this.scaling(volume)).toString());
       }
     },
 
     scaling: function(a) {
-      var r = Math.pow(Math.pow(a, 1/3), 1/4) / 1e2;
+      const r = Math.pow(Math.pow(a, 1/3), 1/4) / 1e2;
       return r;
     },
   });
@@ -174,27 +173,23 @@
       }
     },
 
-    init: function () {
-      var data = this.data;
-    },
-
     update: function() {
       this.material = new THREE.LineBasicMaterial({ color: '#444444' });
 
-      var data = this.data;
-      var grid = new THREE.Group();
+      const data = this.data;
+      const grid = new THREE.Group();
       for (var i = 1; i <= data.size; i++) {
-        var r = data.distance * i;
-        var curve = new THREE.EllipseCurve(0, 0, r, r);
-        var curvePoints = curve.getPoints(64);
-        var circle = new THREE.BufferGeometry().setFromPoints(curvePoints);
+        const r = data.distance * i;
+        const curve = new THREE.EllipseCurve(0, 0, r, r);
+        const curvePoints = curve.getPoints(64);
+        const circle = new THREE.BufferGeometry().setFromPoints(curvePoints);
         grid.add(new THREE.Line(circle, this.material));
 
         if (i == data.size) {
           for (var j = 0; j < 0.5; j += 1/8) {
-            var v1 = curve.getPointAt(j);
-            var v2 = curve.getPointAt(j + 0.5);
-            var line = new THREE.BufferGeometry().setFromPoints([v1, v2]);
+            const v1 = curve.getPointAt(j);
+            const v2 = curve.getPointAt(j + 0.5);
+            const line = new THREE.BufferGeometry().setFromPoints([v1, v2]);
             grid.add(new THREE.Line(line, this.material));
           }
         }
@@ -208,9 +203,9 @@
     constructor() {
       this.selection = "moon";
       document.getElementById(this.selection).disabled = true;
-      var entity = document.getElementById(this.selection + "-orbit");
+      const entity = document.getElementById(this.selection + "-orbit");
       entity.setAttribute("orbit", "color: #CC2222");
-      var data = entity.components.orbit.data;
+      const data = entity.components.orbit.data;
       document.getElementById("ecc").value = data.ecc;
       document.getElementById("ecc-val").innerHTML = Math.round(data.ecc * 1000) / 1000;
       document.getElementById("a").value = scaleOrbitalDistance(data.a);
@@ -239,11 +234,11 @@
       document.getElementById(this.selection).disabled = false;
       document.getElementById(this.selection + "-orbit").setAttribute("orbit", "color: #FFFFFF");
       this.selection = e.target.id;
-      var active = e.target;
+      const active = e.target;
       active.disabled = true;
       document.getElementById(this.selection + "-orbit").setAttribute("orbit", "color: #CC2222");
 
-      var data = document.getElementById(this.selection + "-orbit").components.orbit.data;
+      const data = document.getElementById(this.selection + "-orbit").components.orbit.data;
 
       document.getElementById("ecc").value = data.ecc;
       document.getElementById("ecc-val").innerHTML = Math.round(data.ecc * 1000) / 1000;
@@ -253,23 +248,23 @@
     }
 
     changeRotation(e) {
-      var axis = e.target.id;
-      var delta = e.target.value - this[axis];
+      const axis = e.target.id;
+      const delta = e.target.value - this[axis];
       document.getElementById(this.selection + "-orbit").setAttribute("orbit", axis + ": " + delta.toString());
       this[axis] += delta;
       document.getElementById(axis + "-val").innerHTML = Math.round(this[axis]);
     }
 
     resetSetting(e) {
-      var axis = e.target.id;
+      const axis = e.target.id;
       this[axis] = 0;
       e.target.value = 0;
       document.getElementById(axis + "-val").innerHTML = 0;
     }
 
     changeShape(e) {
-      var param = e.target.id;
-      var value = e.target.value;
+      const param = e.target.id;
+      const value = e.target.value;
       switch (param) {
         case 'ecc':
           document.getElementById(this.selection + "-orbit").setAttribute("orbit", "ecc: " + value.toString());
@@ -283,7 +278,7 @@
   }
 
   window.addEventListener("load", () => { // DOMContetLoad precedes registering of A-FRAME components
-    var c = new Controls();
+    const c = new Controls();
   });
   </script>
 </head>
