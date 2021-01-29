@@ -284,9 +284,13 @@
 </head>
 
 <body>
-  <a-scene fog="type: exponential; density: 0.025; color: #090909">
+  <a-scene fog="type: exponential; density: 0.025; color: #040404">
     <a-entity id="camera" camera look-controls wasd-controls="fly: true;" position="0 1.6 0"></a-entity>
+    <a-entity light="type: ambient; intensity: 0.2;"></a-entity>
     <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow" mass="mass: 1.989e21; density: 1.41e-3" position="0 0.2 1" rotation="90 0 0" radial-grid>
+      <a-entity light="type: point;
+                   castShadow: true;
+                   intensity: 0.8;"></a-entity>
       <a-entity id="planet-orbit" orbit="ecc: 0.5; a: 147.34e6">
         <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.2" material="color:blue" mass="mass: 5.9722e15; density: 5.51e-3" orbiter>
           <a-entity id="moon-orbit" orbit="ecc: 0.75; rotn: -120; incl: 30">
@@ -295,7 +299,7 @@
         </a-entity>
       </a-entity>
     </a-entity>
-    <a-sky color="#090909"></a-sky>
+    <a-sky color="#040404"></a-sky>
   </a-scene>
 
   <div id="controls">
