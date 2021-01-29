@@ -287,7 +287,7 @@
   <a-scene fog="type: exponential; density: 0.025; color: #040404">
     <a-entity id="camera" camera look-controls wasd-controls="fly: true;" position="0 1.6 0"></a-entity>
     <a-entity light="type: ambient; intensity: 0.2;"></a-entity>
-    <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow" mass="mass: 1.989e21; density: 1.41e-3" position="0 0.2 1" rotation="90 0 0" radial-grid>
+    <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow; shader: flat;" mass="mass: 1.989e21; density: 1.41e-3" position="0 0.2 1" rotation="90 0 0" radial-grid>
       <a-entity light="type: point;
                    castShadow: true;
                    intensity: 0.8;"></a-entity>
