@@ -34,14 +34,14 @@
         const e = this.entities[i];
         //var distanceScaling = 1.495978707e7; // 1/10 AU, [Km]
         const distanceScaling = 1; // 1/10 AU, [Km]
-        const timeScaling = 0.0365; //
+        const timeScaling = 0.0365; // 10 s -> 365 days
         const a = e.parentNode.components.orbit.data.a * distanceScaling; // [Km]
         const eps = e.parentNode.components.orbit.data.ecc;
         const mass = e.components.mass.data.mass + this.getOrbitedMass(e); // [megaton]
         const period = Math.sqrt((4*(Math.PI**2)*(a**3))/(mass*0.49823159621)); // [G] = Km^3/(MT*day^2) [day]
-        // https://en.wikipedia.org/wiki/Kepler's_laws_of_planetary_motion#Position_as_a_function_of_time
-        const meanMotion = 2 * Math.PI / period; // [deg/day]
-        const meanAnomaly = meanMotion * ((time * timeScaling) % period) // Period is in day, time is in milisec
+        // https://en.wikipedia.org/wiki/Kepler%27s_laws_of_planetary_motion#Position_as_a_function_of_time
+        const meanMotion = 2 * Math.PI / period; // [rad/day]
+        const meanAnomaly = meanMotion * ((time * timeScaling) % period); // Period is in day, time is in milisec
         const eccentricAnomaly = this.approxEccAnomaly(meanAnomaly, eps);
         //var trueAnomaly = this.approxTrueAnomaly(eccentricAnomaly, eps);
         //var trueAnomaly = Math.PI;
