@@ -11,7 +11,37 @@
     return Math.pow(10, a);
   }
 
+  function approxEccAnomaly(M, eps) {
+    let E, error, error_d;
+    if (eps > 0.8) {
+      E = Math.PI;
+    } else {
+      E = M;
+    }
+    do {
+      error = E - eps * Math.sin(E) - M;
+      error_d = 1 - eps * Math.cos(E);
+      E -= error / error_d;
+    } while (Math.abs(error) > 0.00001);
+    return E;
+  }
 
+  function kepler(a, eps, mass, time) {
+    const distanceScaling = 1; // 1/10 AU, [Km]
+    const aScaled = a * distanceScaling
+    const timeScaling = 0.0365; // 10 s -> 365 days
+    const period = Math.sqrt((4*(Math.PI**2)*(aScaled**3))/(mass*0.49823159621)); // [G] = Km^3/(MT*day^2) [day]
+    // https://en.wikipedia.org/wiki/Kepler%27s_laws_of_planetary_motion#Position_as_a_function_of_time
+    const meanMotion = 2 * Math.PI / period; // [rad/day]
+    const meanAnomaly = meanMotion * ((time * timeScaling) % period); // Period is in day, time is in milisec
+    const eccentricAnomaly = approxEccAnomaly(meanAnomaly, eps);
+    const progress = eccentricAnomaly / (2 * Math.PI);
+    return progress;
+  }
+  
+  function getOrbitedMass(e) {
+    return e.parentNode.parentNode.components.mass.data.mass;
+  }
 
   AFRAME.registerComponent('rotates', {
     tick: function(time, timeDelta) {
@@ -21,7 +51,6 @@
 
   AFRAME.registerSystem('orbiter', {
     schema: {
-      projection: {type: 'number', default: 100},
       speed: {type: 'number', default: 2700000},
     },
 
@@ -32,20 +61,10 @@
     tick: function(time, timeDelta) {
       for (i in this.entities) {
         const e = this.entities[i];
-        //var distanceScaling = 1.495978707e7; // 1/10 AU, [Km]
-        const distanceScaling = 1; // 1/10 AU, [Km]
-        const timeScaling = 0.0365; // 10 s -> 365 days
-        const a = e.parentNode.components.orbit.data.a * distanceScaling; // [Km]
+        const a = e.parentNode.components.orbit.data.a; // [Km]
         const eps = e.parentNode.components.orbit.data.ecc;
-        const mass = e.components.mass.data.mass + this.getOrbitedMass(e); // [megaton]
-        const period = Math.sqrt((4*(Math.PI**2)*(a**3))/(mass*0.49823159621)); // [G] = Km^3/(MT*day^2) [day]
-        // https://en.wikipedia.org/wiki/Kepler%27s_laws_of_planetary_motion#Position_as_a_function_of_time
-        const meanMotion = 2 * Math.PI / period; // [rad/day]
-        const meanAnomaly = meanMotion * ((time * timeScaling) % period); // Period is in day, time is in milisec
-        const eccentricAnomaly = this.approxEccAnomaly(meanAnomaly, eps);
-        //var trueAnomaly = this.approxTrueAnomaly(eccentricAnomaly, eps);
-        //var trueAnomaly = Math.PI;
-        const progress = eccentricAnomaly / (2 * Math.PI);
+        const mass = e.components.mass.data.mass + getOrbitedMass(e); // [megaton]
+        const progress = kepler(a, eps, mass, time)
 
         const pos = e.parentNode.components.orbit.curve.getPointAt(progress);
         e.object3D.position.set(pos.x, pos.y, 0);
@@ -55,24 +74,73 @@
     register: function(e) {
       this.entities.push(e);
     },
+  });
 
-    getOrbitedMass: function(e) {
-      return e.parentNode.parentNode.components.mass.data.mass;
+  AFRAME.registerSystem('tracker', {
+    fillBuffer: function() {
+      if (this.tracker && this.tracked) {
+        this.points.pushList(this.calcPoints(0, this.tracker.data));
+        this.tracker.update();
+      }
     },
 
-    approxEccAnomaly: function(M, eps) {
-      let E, error, error_d
-      if (eps > 0.8) {
-        E = Math.PI;
-      } else {
-        E = M;
+    tick: function(time) {
+      /*
+      const bufferLength = this.points.data.length;
+      const projectionLength = this.tracker.components.tracker.data.projectionLength;
+      const n = (bufferLength < projectionLength) ? 2 : 1;
+      const start = Math.min(time + bufferLength, time + projectionLength);
+      const points = this.calcPoints(start, n);
+      this.points.pushList(points);
+      this.tracker.components.tracker.update();
+      */
+
+      const orbit = this.tracked.parentNode.components.orbit
+      const a = orbit.data.a; // [Km]
+      const eps = orbit.data.ecc;
+      const mass = this.tracked.components.mass.data.mass + getOrbitedMass(this.tracked); // [megaton]
+
+      const progress = kepler(a, eps, mass, i)
+      const pos = this.tracked.parentNode.components.orbit.curve.getPointAt(progress);
+      vec = new THREE.Vector3(pos.x, pos.y, 0);
+      this.tracked.object3D.localToWorld(vec);
+      //this.tracker.object3D.worldToLocal(vec);
+      this.points.push(vec);
+      this.tracker.components.tracker.update();
+    },
+
+    calcPoints: function(from, span) {
+      const toWorld = this.tracked.object3D.localToWorld;
+      const toLocal = this.tracker.object3D.worldToLocal;
+
+      const orbit = this.tracked.parentNode.components.orbit
+      const a = orbit.data.a; // [Km]
+      const eps = orbit.data.ecc;
+      const mass = this.tracked.components.mass.data.mass + getOrbitedMass(this.tracked); // [megaton]
+
+      let points = [];
+      for (var i = from; i < span + from; i++) {
+        const progress = kepler(a, eps, mass, i)
+        const pos = this.tracked.parentNode.components.orbit.curve.getPointAt(progress);
+        vec = new THREE.Vector3(pos.x, pos.y, 0);
+        this.tracked.object3D.localToWorld(vec);
+        this.tracker.object3D.worldToLocal(vec);
+        points.push(vec);
       }
-      do {
-        error = E - eps * Math.sin(E) - M;
-        error_d = 1 - eps * Math.cos(E);
-        E -= error / error_d;
-      } while (Math.abs(error) > 0.00001);
-      return E;
+      return points;
+    },
+
+    register: function(e) {
+      this.tracked = e;
+
+      //this.fillBuffer();
+    },
+
+    registerTracker: function(c) {
+      this.tracker = c.el;
+      this.points = c.points;
+
+      //this.fillBuffer();
     },
   });
 
@@ -148,6 +216,33 @@
     },
   });
 
+  AFRAME.registerComponent('tracked', {
+    init: function() {
+      this.el.sceneEl.systems['tracker'].register(this.el);
+    },
+  });
+
+  AFRAME.registerComponent('tracker', {
+    schema: {
+      projectionLength: {type: 'number', default: 1000},
+    },
+
+    init: function() {
+      this.points = new RingBuffer(this.data.projectionLength);
+      this.system.registerTracker(this);
+    },
+
+    update: function() {
+      const material = new THREE.LineBasicMaterial({
+          color: '#03E8FC',
+          linewidth: 2,
+      });
+      const geometry = new THREE.BufferGeometry().setFromPoints(this.points.getList());
+      const path = new THREE.Line(geometry, material);
+      this.el.setObject3D("path", path);
+    },
+  });
+
   AFRAME.registerComponent('mass', {
     schema: {
       mass: {type: 'number', default: 1}, // MT
@@ -204,6 +299,36 @@
 
     },
   });
+
+  class RingBuffer {
+    constructor(size) {
+      this.size = size;
+      this.write = 0;
+      this.data = [];
+    }
+
+    getList() {
+      let l = [];
+      for (var i = this.write; i < this.write + this.size; i++) {
+        if (i % this.size < this.data.length){
+          l.push(this.data[i % this.size]);
+        }
+      }
+      return l;
+    }
+
+    push(v) {
+      this.data[this.write] = v;
+      this.write += 1;
+      this.write %= this.size;
+    }
+
+    pushList(l) {
+      for (var i = Math.max(l.length - this.size, 0); i < l.length; i++) {
+        this.push(l[i]);
+      }
+    }
+  }
 
   class Controls {
     constructor() {
@@ -293,18 +418,24 @@
   <a-scene fog="type: exponential; density: 0.025; color: #040404">
     <a-entity id="camera" camera look-controls wasd-controls="fly: true;" position="0 1.6 0"></a-entity>
     <a-entity light="type: ambient; intensity: 0.2;"></a-entity>
-    <a-entity id="star-body" geometry="primitive: sphere; radius: 0.5" material="color:yellow; shader: flat;" mass="mass: 1.989e21; density: 1.41e-3" position="0 0.2 1" rotation="90 0 0" radial-grid>
+    <a-entity id="star-body"
+      geometry="primitive: sphere; radius: 0.5"
+      material="color:yellow; shader: flat;"
+      mass="mass: 1.989e21; density: 1.41e-3" 
+      position="0 0.2 1" rotation="90 0 0"
+      radial-grid>
       <a-entity light="type: point;
                    castShadow: true;
                    intensity: 0.8;"></a-entity>
       <a-entity id="planet-orbit" orbit="ecc: 0.5; a: 147.34e6">
         <a-entity id="planet-body" geometry="primitive: sphere; radius: 0.2" material="color:blue" mass="mass: 5.9722e15; density: 5.51e-3" orbiter>
           <a-entity id="moon-orbit" orbit="ecc: 0.75; rotn: -120; incl: 30">
-            <a-entity id="moon-body" geometry="primitive: sphere; radius: 0.05" material="color:grey" mass="mass: 7.34767309e13; density: 3.34e-3" orbiter></a-entity>
+            <a-entity id="moon-body" geometry="primitive: sphere; radius: 0.05" material="color:grey" mass="mass: 7.34767309e13; density: 3.34e-3" orbiter tracked></a-entity>
           </a-entity>
         </a-entity>
       </a-entity>
     </a-entity>
+    <a-entity tracker></a-entity>
     <a-sky color="#040404"></a-sky>
   </a-scene>
 
